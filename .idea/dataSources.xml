@@ -13,5 +13,11 @@
       <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
       <jdbc-url>jdbc:sqlite:D:\PycharmProjects\my_scheduled_app\债券成交.db</jdbc-url>
     </data-source>
+    <data-source source="LOCAL" name="锂产业链价格" uuid="f381d457-f9ac-44d0-a662-b630b0a7451a">
+      <driver-ref>sqlite.xerial</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
+      <jdbc-url>jdbc:sqlite:D:\PycharmProjects\my_scheduled_app\锂产业链价格.db</jdbc-url>
+    </data-source>
   </component>
 </project>

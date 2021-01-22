@@ -42,10 +42,6 @@ def get_html(url):
 
 def process_data(text):
 
-    # with open('./htmls/init.html', 'r', encoding='utf-8') as f:
-    #     text = f.read()
-    #     f.close()
-
     soup = BeautifulSoup(text, 'lxml')
     content = soup.find_all('div', class_='content-main')[0]
     lines = content.find_all('tr')
@@ -67,7 +63,7 @@ def process_data(text):
             # print(info_list)
             today_df.loc[today_df.shape[0]] = info_list
 
-    today_df.iloc[:0] = today_df.iloc[:0].apply(lambda x: x.split('\n')[0]) # 名称简化
+    today_df['名称'] = today_df['名称'].apply(lambda x: x.split('\n')[0]) # 名称简化
     today_df.drop('info',axis=1,inplace=True) # 去掉最后的空列
     return  today_df
 
