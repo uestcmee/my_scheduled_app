@@ -1,24 +1,29 @@
 import schedule
 import time
-from win10toast import ToastNotifier
-toaster = ToastNotifier()
-# 设置python exe运行时不显示窗口
-import win32api, win32gui
-ct = win32api.GetConsoleTitle()
-hd = win32gui.FindWindow(0,ct)
-win32gui.ShowWindow(hd,0)
+import platform
 from functools import wraps
+
+if ('Windows' in platform.platform()):
+    from win10toast import ToastNotifier
+    toaster = ToastNotifier()
+    # 设置python exe运行时不显示窗口
+    import win32api, win32gui
+    ct = win32api.GetConsoleTitle()
+    hd = win32gui.FindWindow(0,ct)
+    win32gui.ShowWindow(hd,0)
+
 def logged(func):
     @wraps(func)
     def with_logging(*args, **kwargs):
         print (func.__name__)    # 输出 函数名
-        show_notifier('开始运行',func.__doc__)
+        if ('Windows' in platform.platform()):
+            show_notifier('开始运行',func.__doc__)
         return func(*args, **kwargs)
     return with_logging
 
-
 def show_notifier( title, text=':)'):
-    toaster.show_toast(title,text,duration=5)# icon_path="涨跌.ico",)
+    if ('Windows' in platform.platform()):
+        toaster.show_toast(title,text,duration=5)# icon_path="涨跌.ico",)
     return 0
 
 @logged
