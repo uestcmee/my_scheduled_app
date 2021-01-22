@@ -1,9 +1,7 @@
 # 定期获取数据，定时模块单独封装
 # 后期可以使用mainloop文件进行定时
 import datetime
-import time,os
-import tkinter as tk
-import threading
+
 import sqlite3
 
 # 获取债券数据
