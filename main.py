@@ -2,6 +2,8 @@ import schedule
 import time
 import platform
 from functools import wraps
+import datetime
+import traceback
 
 if "Windows" in platform.platform():
     from win10toast import ToastNotifier
@@ -18,7 +20,7 @@ if "Windows" in platform.platform():
 def logged(func):
     @wraps(func)
     def with_logging(*args, **kwargs):
-        print(func.__name__)  # 输出 函数名
+        print(func.__name__,datetime.datetime.now())  # 输出 函数名
         if "Windows" in platform.platform():
             show_notifier("开始运行", func.__doc__)
         return func(*args, **kwargs)
@@ -52,6 +54,39 @@ def cobalt_price_crawler():
     main_func()
 
 
+@logged
+def au_contract_crawler():
+    """
+    黄金合约信息
+    """
+    from au_data_crawler import save_contract
+    try:
+        save_contract()
+    except:
+        traceback.print_exc()
+
+@logged
+def au_close_price_crawler():
+    """
+    黄金15：00价格
+    """
+    from au_data_crawler import update_hist
+    try:
+        update_hist()
+    except :
+        traceback.print_exc()
+
+@logged
+def au_minutes_price_crawler():
+    """
+    黄金分钟数据
+    """
+    from au_data_crawler import save_minutes_data
+    try:
+        save_minutes_data()
+    except:
+        traceback.print_exc()
+
 if __name__ == "__main__":
     show_notifier("定期启动程序", "已开始运行")
     # # 一个愚蠢的方式来工作日启动
@@ -63,6 +98,10 @@ if __name__ == "__main__":
 
     schedule.every().day.at("21:30").do(bond_deal_crawler)
     schedule.every().day.at("21:30:30").do(cobalt_price_crawler)
+    schedule.every().day.at("15:04").do(au_contract_crawler)  # 保存次日合约数据
+    schedule.every().day.at("15:03").do(au_close_price_crawler)  # 保存当前
+    schedule.every(60).seconds.do(au_minutes_price_crawler)
+
 
     while True:
         schedule.run_pending()
