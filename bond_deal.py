@@ -13,11 +13,13 @@ def fetch_bond_info():
     date_time = datetime.datetime.today()
     date = date_time.date()
 
-    def GetTables(db_file='main.db'):
+    def GetTables(db_file="main.db"):
         try:
             conn = sqlite3.connect(db_file)
             cur = conn.cursor()
-            cur.execute("select name from sqlite_master where type='table' order by name")
+            cur.execute(
+                "select name from sqlite_master where type='table' order by name"
+            )
             return cur.fetchall()
         except Exception as e:
             print(e)
@@ -32,8 +34,8 @@ def fetch_bond_info():
     #     # time.sleep(300)# 延时五分钟
     #     return 0
     # else:
-    print('获取今日成交')
-    if ('ak' not in locals()): # 避免重复import
+    print("获取今日成交")
+    if "ak" not in locals():  # 避免重复import
         import akshare as ak
     bond_df_raw = ak.bond_spot_deal()
 
@@ -46,14 +48,15 @@ def fetch_bond_info():
     将结果保存到数据库中
     """
     from sqlalchemy import create_engine
-    engine = create_engine('sqlite:///债券成交.db')
-    bond_df_raw.to_sql(str(date),engine, if_exists='replace')
 
-    print('成交获取完成')
+    engine = create_engine("sqlite:///债券成交.db")
+    bond_df_raw.to_sql(str(date), engine, if_exists="replace")
+
+    print("成交获取完成")
     return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # print('成交数据每日爬虫')
     # 工作日获取债券信息
     # 8点结束交易，但是8:30-9:30才有成交量数据，之前的一直没有获取到成交量数据
