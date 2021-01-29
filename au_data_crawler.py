@@ -9,7 +9,7 @@ import pandas as pd
 import requests
 import schedule
 from sqlalchemy import create_engine
-
+AU_DATA_PATH="../my_scheduled_app/Au/" # 黄金数据文件路径
 
 # 现货实时行情
 
@@ -72,16 +72,44 @@ class my_requests:
 #         return False
 
 
+def sjs_calender(month_str):
+    url='http://www.szse.cn/api/report/exchange/onepersistenthour/monthList?month={}'.format(month_str)
+    res=requests.get(url)
+    res_data=json.loads(res.text)['data']
+    df=pd.DataFrame(res_data).set_index('jyrq')
+    df.columns=['weekday','trade_day']
+    return df
+
+def get_next_tradeday(date_str:str):
+    """
+
+    :param date_str: 传入一个完整的时间字符串如‘2021-02-02’
+    :return:
+    """
+    year=int(date_str[0:4])
+    month=int(date_str[5:7])
+    if month != 12:
+        next_month='{}-{}'.format(year,month+1)
+    else:
+        next_month='{}-{}'.format(year+1,'01')
+    df=pd.concat([sjs_calender(date_str[:7]),sjs_calender(next_month)])
+    after_today = df.loc[date_str:].iloc[1:]
+    next_trade_day= after_today[after_today['trade_day']=='1'].index[0]
+    return next_trade_day
+
+
 def get_today_str():
     global real_today_str, trade_today_str
     today = datetime.datetime.now()
     one_day = datetime.timedelta(days=1)
     real_today_str = str(today)[:10]
     if today.hour >= 20:  # 晚上八点之后切换至下一天
-        trade_today_str = str(today + one_day)[:10]
+        trade_today_str = get_next_tradeday(real_today_str) #下一交易日
+    elif today.hour <6: # 早上六点前，上一日的下一交易日
+        trade_today_str = get_next_tradeday(str(today-one_day)[:10])
     else:
         trade_today_str = str(today)[:10]
-    next_day = str(today + one_day)[:10]
+    next_day = get_next_tradeday(real_today_str) #下一交易日
     day_dict = {
         "today": today,  # 日期类型
         "trade_day": trade_today_str,  # 当前的对应交易日（晚八点切换）
@@ -150,7 +178,7 @@ def update_hist():
     try:
         close_data = au_and_future.loc["15:00"].tolist()
         date = str(datetime.datetime.now())[:10]
-        with open("./Au/0_close_hist.csv", "a") as f:
+        with open(AU_DATA_PATH+"0_close_hist.csv", "a") as f:
             f.write(
                 ",".join([date] + [str(x) for x in close_data] + [symbol]) + "\n"
             )  # 最后一列添加活跃券
@@ -250,7 +278,8 @@ def get_contract_list():  # 上海期货交易所数据，可以直接获取全�
     return contract_list
 
 
-engine_contract = create_engine(r"sqlite:///Au/黄金合约信息.db")
+contract_db_path=AU_DATA_PATH+"黄金合约信息.db"
+engine_contract = create_engine(r"sqlite:///"+contract_db_path)
 
 
 def save_contract(init=False):
@@ -277,7 +306,8 @@ def get_symbol_list():
     return qh_symbol_list
 
 
-engine_minutes = create_engine(r"sqlite:///Au/黄金分钟信息.db")
+minutes_db_path = AU_DATA_PATH+"黄金分钟信息.db"
+engine_minutes = create_engine(r"sqlite:///"+minutes_db_path)
 
 
 def save_minutes_data(force=True):
@@ -306,4 +336,3 @@ def crawler_loop():
 
 if __name__ == "__main__":
     crawler_loop()
-    # TODO 黄金分时成交明细
