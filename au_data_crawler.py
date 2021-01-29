@@ -72,13 +72,21 @@ class my_requests:
 #         return False
 
 
-def sjs_calender(month_str):
-    url='http://www.szse.cn/api/report/exchange/onepersistenthour/monthList?month={}'.format(month_str)
-    res=requests.get(url)
-    res_data=json.loads(res.text)['data']
-    df=pd.DataFrame(res_data).set_index('jyrq')
-    df.columns=['weekday','trade_day']
-    return df
+def sjs_calender_year(year): #深交所
+    url='http://www.szse.cn/api/report/exchange/onepersistenthour/monthList?month={}-{}'
+
+    df_list=[]
+    for month in range(1,13):
+        month_url=url.format(year,str(month).zfill(2))
+        res=requests.get(month_url)
+        res_data=json.loads(res.text)['data']
+        df=pd.DataFrame(res_data)
+        df_list.append(df)
+    df_year=pd.concat(df_list)
+    df_year.columns=['weekday','trade_day','calendar_day']
+    df_year.set_index('calendar_day',inplace=True)
+
+    return df_year
 
 def get_next_tradeday(date_str:str):
     """
@@ -92,9 +100,26 @@ def get_next_tradeday(date_str:str):
         next_month='{}-{}'.format(year,month+1)
     else:
         next_month='{}-{}'.format(year+1,'01')
-    df=pd.concat([sjs_calender(date_str[:7]),sjs_calender(next_month)])
+    from sqlalchemy import create_engine
+
+    trade_day_db_path = '../my_scheduled_app/' + '交易日.db'
+    engine_trade_day = create_engine(r"sqlite:///" + trade_day_db_path)
+
+    df=pd.read_sql('year'+str(year), engine_trade_day,index_col='calendar_day')
     after_today = df.loc[date_str:].iloc[1:]
-    next_trade_day= after_today[after_today['trade_day']=='1'].index[0]
+    after_today_trade=after_today[after_today['trade_day']=='1']
+    if after_today_trade.shape[0]==0:
+        try: # 下一年存在
+            print('选择下一年')
+            after_today=pd.read_sql('year'+str(year+1), engine_trade_day,index_col='calendar_day')
+        except: #下一年不存在，获取
+            print('获取并选择下一年')
+            year_all=sjs_calender_year(year+1)
+            year_all.to_sql('year'+str(year+1), engine_trade_day, if_exists="replace")
+            after_today=pd.read_sql('year'+str(year+1), engine_trade_day,index_col='calendar_day')
+        after_today_trade=after_today[after_today['trade_day']=='1']
+
+    next_trade_day= after_today_trade.index[0] # 今日后交易日的第一天
     return next_trade_day
 
 
